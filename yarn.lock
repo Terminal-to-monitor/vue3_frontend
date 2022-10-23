@@ -2,6 +2,16 @@
 # yarn lockfile v1
 
 
+"@amap/amap-jsapi-loader@^1.0.1":
+  "integrity" "sha512-nPyLKt7Ow/ThHLkSvn2etQlUzqxmTVgK7bIgwdBRTg2HK5668oN7xVxkaiRe3YZEzGzfV2XgH5Jmu2T73ljejw=="
+  "resolved" "https://registry.npmmirror.com/@amap/amap-jsapi-loader/-/amap-jsapi-loader-1.0.1.tgz"
+  "version" "1.0.1"
+
+"@amap/amap-jsapi-types@^0.0.9":
+  "integrity" "sha512-ZoSV+alArMQyaMN1dSO/qp/dvI3G1ARwGSnZQcYjqSUJ1PdC4QZIk4210CIY+toXypmtAmht3WiWBAfln2bzSA=="
+  "resolved" "https://registry.npmmirror.com/@amap/amap-jsapi-types/-/amap-jsapi-types-0.0.9.tgz"
+  "version" "0.0.9"
+
 "@babel/parser@^7.16.4":
   "integrity" "sha512-h1IUp81s2JYJ3mRkdxJgs4UvmSsRvDrx5ICSJbPvtWYv5i1nTBGcBpnog+89rAFMwvvru6E5NUHdBe01UeSzYA=="
   "resolved" "https://registry.npmmirror.com/@babel/parser/-/parser-7.19.6.tgz"

@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@amap/amap-jsapi-loader": "^1.0.1",
+    "@amap/amap-jsapi-types": "^0.0.9",
     "pinia": "^2.0.23",
     "vue": "^3.2.37",
     "vue-router": "^4.1.5"

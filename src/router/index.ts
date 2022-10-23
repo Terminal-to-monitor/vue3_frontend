@@ -6,6 +6,11 @@ const routes: Array<RouteRecordRaw> = [
       name: 'home',
       component: () => import('../components/Home.vue')
     },
+    {
+     path:'/map',
+     name: 'map',
+     component: () => import('../pages/map.vue')
+    }
 ]
 const router = createRouter({
     history: createWebHistory(),
