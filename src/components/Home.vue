@@ -1,16 +1,23 @@
 <script setup lang="ts">
 import {ref} from "vue";
 import {useStore} from "../store/";
+import request from "../service";
+import {useRouter} from "vue-router";
 
+const router = useRouter()
 const store = useStore()
-const username = ref<string>('')
-const passwd = ref<string>('')
-
-const submit = () => {
-  if(username.value === '' || passwd.value === ''){
+const userName = ref<string>('')
+const passWord = ref<string>('')
+//登录
+const submit = async () => {
+  if(userName.value === '' || passWord.value === ''){
     alert('您未输入账户或密码')
   }
-  store.login(username.value, passwd.value)
+  const result = await store.login(userName.value, passWord.value)
+  console.log(result)
+  if(result.data.code == 200){
+    router.push('/map')
+  }
 }
 
 </script>
@@ -28,7 +35,7 @@ const submit = () => {
             maxlength="10"
             class="w-full placeholder:text-lg mt-1 px-4 py-3  bg-white border shadow-sm transition duration-150 border-slate-300 placeholder-slate-400 focus:scale-105 hover:scale-105 focus:border-sky-800 focus:ring-sky-500 rounded-md sm:text-sm focus:ring-1"
             placeholder="请输入用户名"
-            v-model="username"
+            v-model="userName"
         />
 
       </div>
@@ -39,7 +46,7 @@ const submit = () => {
             maxlength="15"
             class="w-full placeholder:text-lg mt-1 px-4 py-3  bg-white border shadow-sm transition duration-150 border-slate-300 placeholder-slate-400 focus:scale-105 hover:scale-105 focus:border-sky-800 focus:ring-sky-500 rounded-md sm:text-sm focus:ring-1"
             placeholder="请输入密码"
-            v-model="passwd"
+            v-model="passWord"
         />
       </div>
       <button

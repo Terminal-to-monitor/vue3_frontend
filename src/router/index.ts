@@ -7,9 +7,15 @@ const routes: Array<RouteRecordRaw> = [
       component: () => import('../components/Home.vue')
     },
     {
-     path:'/map',
-     name: 'map',
-     component: () => import('../pages/map.vue')
+      path:'/map',
+      name: 'map',
+      component: () => import('../pages/map.vue')
+    },
+    {
+     path:'/monitoringpage',
+     name:'monitoringpage',
+     component: () => import('../pages/MonitoringPage.vue')
+
     }
 ]
 const router = createRouter({

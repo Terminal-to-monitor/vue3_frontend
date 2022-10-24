@@ -53,6 +53,21 @@ onMounted(() => {
 
 <template>
 <div class="overflow-hidden">
+<!--  左上角提示信息-->
+  <div class="translation hover:scale-105 text-center w-1/4 h-24 inline fixed z-10 bg-white mt-2 ml-10 flex  justify-around items-center rounded-xl shadow-lg">
+    <div class="flex-1  ">
+      <text class="text-blue-500 text-2xl font-semibold">55</text>
+      <p class="text-sm font-semibold">场站数量</p>
+    </div>
+    <div class="flex-1">
+      <text class="text-orange-500 text-2xl font-semibold">25</text>
+      <p class="text-sm font-semibold">告警未处理信息</p>
+    </div>
+    <div class="flex-1">
+      <text class="text-red-500 text-2xl font-semibold">26</text>
+      <p class="text-sm font-semibold">告警总数量</p>
+    </div>
+  </div>
   <div class="w-screen h-screen" id="container">
 
   </div>
