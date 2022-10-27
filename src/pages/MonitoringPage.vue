@@ -2,7 +2,10 @@
 
 </script>
 <template>
-  <div class="h-5/6 w-full ">
+  <div class="bg-gray-200 fixed w-40 h-full text-center">
+    <p class="text-red-400 text-xl font-bold ">告警信息</p>
+  </div>
+  <div class="h-5/6 w-full ml-24  ">
     <svg version="1.1" id="图层_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
          viewBox="0 0 1532 839.8" style="enable-background:new 0 0 1532 839.8;" xml:space="preserve">
 

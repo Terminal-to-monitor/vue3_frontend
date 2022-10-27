@@ -1,13 +1,14 @@
 <script setup lang="ts">
-import {ref} from "vue";
+import {ref,onMounted} from "vue";
 import {useStore} from "../store/";
-import request from "../service";
 import {useRouter} from "vue-router";
+
 
 const router = useRouter()
 const store = useStore()
 const userName = ref<string>('')
 const passWord = ref<string>('')
+
 //登录
 const submit = async () => {
   if(userName.value === '' || passWord.value === ''){
@@ -15,10 +16,16 @@ const submit = async () => {
   }
   const result = await store.login(userName.value, passWord.value)
   console.log(result)
-  if(result.data.code == 200){
+  if(result.code == 200){
     router.push('/map')
   }
 }
+onMounted(() => {
+  const token = localStorage.getItem('token')
+  if(token){
+    router.push('/map')
+  }
+})
 
 </script>
 <template id="home">

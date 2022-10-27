@@ -17,5 +17,10 @@ request.interceptors.request.use((config) => {
     return config
 })
 
+request.interceptors.response.use((res) => res,(err)=>{
+    if(err.message === 'Network Error' ){
+        alert('网络错误')
+    }
+})
 
 export default request
