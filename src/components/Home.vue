@@ -2,7 +2,7 @@
 import {ref,onMounted} from "vue";
 import {useStore} from "../store/";
 import {useRouter} from "vue-router";
-
+import {ElButton} from "element-plus";
 
 const router = useRouter()
 const store = useStore()

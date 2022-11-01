@@ -1,4 +1,5 @@
 import axios from 'axios'
+import {emsg} from "../hooks/message";
 
 let request = axios.create({
     baseURL:'http://43.138.33.203:8088',
@@ -17,9 +18,19 @@ request.interceptors.request.use((config) => {
     return config
 })
 
-request.interceptors.response.use((res) => res,(err)=>{
+request.interceptors.response.use((res) => {
+    if(res.data.code === 401){
+        localStorage.removeItem('token')
+        emsg('登录过期，请重新登录')
+        let timer =setTimeout(()=>{
+            history.pushState('','','//')
+        },3000)
+        clearTimeout(timer)
+    }
+    return res
+},(err)=>{
     if(err.message === 'Network Error' ){
-        alert('网络错误')
+        emsg('网络错误')
     }
 })
 

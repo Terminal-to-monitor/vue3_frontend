@@ -13,7 +13,7 @@ const routes: Array<RouteRecordRaw> = [
     },
     {
      path:'/monitoringpage',
-     name:'monitoringpage',
+     name:'MonitoringPage',
      component: () => import('../pages/MonitoringPage.vue')
 
     }

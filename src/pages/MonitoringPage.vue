@@ -1,4 +1,14 @@
 <script lang="ts" setup>
+import {useStore} from "../store";
+import {useRoute} from "vue-router";
+
+const store = useStore()
+const route = useRoute()
+console.log(route.query)
+store.getNodeInfo(route.query.id as string)
+const changeState = () =>{
+  console.log('点击了')
+}
 
 </script>
 <template>
@@ -5058,7 +5068,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
       <stop  offset="0.5" style="stop-color:#0071BC"/>
       <stop  offset="0.95" style="stop-color:#0E89CC"/>
 		</linearGradient>
-    <path style="fill:url(#SVGID_00000111169473895100250460000007913611503878974114_);" d="M656.8,280.9c-5.8-0.6-8.1-4.8-14.2-4.8
+    <path  @click="changeState" style="fill:url(#SVGID_00000111169473895100250460000007913611503878974114_);" d="M656.8,280.9c-5.8-0.6-8.1-4.8-14.2-4.8
 			s-9.8,4.8-14.4,4.8H626v14h2.1c4.6,0,8.3,4.8,14.4,4.8s8.5-4.2,14.2-4.8h2.3v-14H656.8z"/>
 
     <linearGradient id="SVGID_00000091702262437165252930000017371357354883095435_" gradientUnits="userSpaceOnUse" x1="725.6295" y1="570.0472" x2="756.2195" y2="570.0472" gradientTransform="matrix(1 0 0 -1 0 857.1044)">

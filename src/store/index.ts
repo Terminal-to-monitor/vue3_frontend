@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import {reqGetSignInfo, reqLogin} from "../service/api";
+import {reqEditCzInfo, reqGetNodeInfo, reqGetSignInfo, reqLogin,reqDeleteCZ} from "../service/api";
 
 export const  useStore = defineStore('user', {
     // 推荐使用 完整类型推断的箭头函数
@@ -8,7 +8,8 @@ export const  useStore = defineStore('user', {
             // 所有这些属性都将自动推断其类型
             token: '',
             permissions: [],
-            terminalInfo: []
+            terminalInfo: [],
+            nodeInfo:[]
         }
     },
     actions: {
@@ -25,11 +26,50 @@ export const  useStore = defineStore('user', {
             }
         },
         async getSignInfo() {
-            const result = await reqGetSignInfo()
+           try {
+               const result = await reqGetSignInfo()
+               if(result.data.code === 200){
+                   this.terminalInfo = result.data.data
+               }else{
+                   console.log(result.data)
+               }
+           }catch (e){
+               throw new Error('something wrong')
+           }
+        },
+        async getNodeInfo(id: string){
+           try {
+               const result = await reqGetNodeInfo(id)
+               if(result.data.code === 200){
+                   this.nodeInfo = result.data.data
+               }else{
+                   console.log(result.data)
+               }
+           }catch (e){
+               throw new Error('something wrong')
+           }
+        },
+        async changeCzName(id: string, name: string){
+            const result = await reqEditCzInfo(id, name)
             if(result.data.code === 200){
-                this.terminalInfo = result.data.data
+                return 'ok'
+            }
+        },
+        async deleteCZ(id: string){
+            const result = await reqDeleteCZ(id)
+            if(result.data.code === 200){
+                return 'ok'
             }
         }
+    },
+    persist:{
+        enabled:true,
+        strategies:[
+            {
+                key:'permissions',
+                paths:['permissions']
+            }
+        ]
     }
     })
 
