@@ -107,7 +107,7 @@ const deleteCZ = async () =>{
 }
 
 const enter = () => {
-  if(curName.id !== '1'){
+  if(curName.id != 1){
     emsg('场站已关闭')
     return
   }
