@@ -1,6 +1,7 @@
 import axios from 'axios'
 import {emsg} from "../hooks/message";
-
+import {useRouter} from "vue-router";
+import router from "../router";
 let request = axios.create({
     baseURL:'http://43.138.33.203:8088',
     timeout:10000
@@ -19,17 +20,14 @@ request.interceptors.request.use((config) => {
 })
 
 request.interceptors.response.use((res) => {
-    if(res.data.code === 401){
+    if(res.data.code === 401 && res.data.msg === '认证失败请重新登录'){
         localStorage.removeItem('token')
         emsg('登录过期，请重新登录')
-        let timer =setTimeout(()=>{
-            history.pushState('','','//')
-        },3000)
-        clearTimeout(timer)
+        router.push('/')
     }
     return res
 },(err)=>{
-    if(err.message === 'Network Error' ){
+    if(err.message ){
         emsg('网络错误')
     }
 })

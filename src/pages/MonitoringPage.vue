@@ -1,20 +1,197 @@
 <script lang="ts" setup>
 import {useStore} from "../store";
 import {useRoute} from "vue-router";
+import {ref, onMounted, onBeforeUnmount} from "vue";
+import {reqSwitch,reqSaveNodeInfo} from "../service/api";
+import {emsg,smsg} from "../hooks/message";
 
 const store = useStore()
 const route = useRoute()
-console.log(route.query)
-store.getNodeInfo(route.query.id as string)
-const changeState = () =>{
-  console.log('点击了')
+let nodeInfo = ref([])
+let drawer = ref<boolean>(false)
+let drawer2 = ref<boolean>(false)
+const direction = ref<string>('rtl')
+
+//阀门流向显示
+//let valve3 = ref<boolean>(true)
+
+//获取节点信息
+const getNode = async () => {
+  const result = await store.getNodeInfo(route.query.id as string)
+  nodeInfo.value = result.data
+}
+getNode()
+
+//普通节点数据
+let currentNode = ref<any>({})
+//温度计节点数据
+let thermometer = ref<any>({})
+let wrongInfo = ref<any>([])
+let timer: number
+
+console.log(nodeInfo)
+
+//获取错误信息
+const getWrong = () => {
+  nodeInfo.value.forEach((item: any) => {
+    if (item.wrong){
+      wrongInfo.value.push(...item.wrong)
+    }
+  })
+
+  console.log(wrongInfo.value)
 }
 
+//阀门开关
+const changeState = (e: any) => {
+  const id = e.target.getAttribute('myid')
+  nodeInfo.value.forEach((item: any) =>{
+    if(id == item.id){
+      const data = {
+        id,
+        name:item.name,
+        status:item.status === 1 ? 0 : 1,
+        terminalId:item.terminalId,
+        type:item.type
+      }
+     reqSwitch(data).then((res)=>{
+        if(res.data.code == 200 && res.data.msg == '更新成功'){
+          smsg('更新成功')
+          getNode()
+          const color = data.status === 1 ? 'blue' : 'red'
+          e.target.style.fill = color
+        }else{
+          emsg('更新失败')
+        }
+      })
+    }
+  })
+}
+
+//编辑普通节点信息
+const editInfo = (e: any) => {
+  const id = e.target.getAttribute('myid')
+  nodeInfo.value.forEach((item: any)=>{
+    if(id == item.id){
+      currentNode.value = {...item}
+    }
+  })
+  drawer.value = true
+
+}
+
+//编辑温度计节点信息
+const thermometerInfo = (e: any) => {
+  const id = e.target.getAttribute('myid')
+  nodeInfo.value.forEach((item: any)=>{
+    if(id == item.id){
+      thermometer.value = {...item}
+    }
+  })
+  drawer2.value = true
+}
+
+//保存信息
+const saveInfo = async (isThermometer: string) => {
+  const data = isThermometer === '1' ? thermometer.value : currentNode.value
+  const result = await reqSaveNodeInfo(data)
+  console.log(result.data)
+  if(result.data.code == 200){
+    smsg('更新成功')
+    drawer.value = false
+    drawer2.value = false
+    getNode()
+    console.log(nodeInfo.value)
+  }else {
+    emsg('更新失败')
+    drawer.value = false
+    drawer2.value = false
+  }
+}
+
+onMounted(()=>{
+   /*timer = setInterval(()=>{
+    getNode()
+  },3000)*/
+  getWrong()
+})
+/*onBeforeUnmount(()=>{
+  clearInterval(timer)
+})*/
 </script>
 <template>
-  <div class="bg-gray-200 fixed w-40 h-full text-center">
-    <p class="text-red-400 text-xl font-bold ">告警信息</p>
+  <div class=" fixed w-40 h-full text-center">
+      <el-card class="box-card">
+        <template #header>
+          <div class="card-header">
+            <span>点位告警</span>
+          </div>
+        </template>
+       <p  class='text-red-400 mt-2 ' v-for="(info,index) in wrongInfo" :key="index">{{info}}</p>
+      </el-card>
   </div>
+  <el-drawer v-model="drawer" :direction="direction" >
+    <template #title>
+      <h4 class="font-semibold">详情</h4>
+    </template>
+    <template #default>
+      <div>
+        节点名称：<el-input
+          type="text"
+          v-model="currentNode.name"
+      />
+        上限：<el-input
+            type="number"
+            v-model="currentNode.upperlimit"
+        />
+        下限：<el-input
+          type="number"
+          v-model="currentNode.lowerlimit"
+      />
+      </div>
+    </template>
+    <template #footer>
+      <div style="flex: auto">
+        <el-button @click="drawer = false">取消</el-button>
+        <el-button type="primary" @click="saveInfo" >保存</el-button>
+      </div>
+    </template>
+  </el-drawer>
+  <el-drawer v-model="drawer2" :direction="direction" >
+    <template #title>
+      <h4 class="font-semibold">详情</h4>
+    </template>
+    <template #default>
+      <div>
+        节点名称：<el-input
+          type="text"
+          v-model="thermometer.name"
+      />
+        压力上限：<el-input
+          type="number"
+          v-model="thermometer.pressuremaxvalue"
+      />
+        压力下限：<el-input
+          type="number"
+          v-model="thermometer.pressureminvalue"
+      />
+        温度上限：<el-input
+          type="number"
+          v-model="thermometer.temperaturemaxvalue"
+      />
+        温度下限：<el-input
+          type="number"
+          v-model="thermometer.temperatureminvalue"
+      />
+      </div>
+    </template>
+    <template #footer>
+      <div style="flex: auto">
+        <el-button @click="drawer2 = false">取消</el-button>
+        <el-button type="primary" @click="saveInfo('1')" >保存</el-button>
+      </div>
+    </template>
+  </el-drawer>
   <div class="h-5/6 w-full ml-24  ">
     <svg version="1.1" id="图层_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
          viewBox="0 0 1532 839.8" style="enable-background:new 0 0 1532 839.8;" xml:space="preserve">
@@ -1483,9 +1660,9 @@ rkJggg==" transform="matrix(0.48 0 0 0.48 1060.9995 61.8522)">
 			C937.5,125.1,937.9,124.8,938.4,124.8z"/>
     <path class="st131" d="M932.9,122.4h9.1l0,0v1.8c0,0.2-0.2,0.3-0.3,0.3l0,0h-8.4c-0.2,0-0.3-0.2-0.3-0.3c0,0,0,0,0,0L932.9,122.4
 			L932.9,122.4z"/>
-    <path class="st132" d="M923.2,105.6h28.5c0.3,0,0.5,0.2,0.5,0.5v15.9c0,0.3-0.2,0.5-0.5,0.5h-28.5c-0.3,0-0.5-0.2-0.5-0.5v-15.9
+    <path :myid="nodeInfo[0].id"  style='cursor:pointer;' @click='thermometerInfo' class="st132" d="M923.2,105.6h28.5c0.3,0,0.5,0.2,0.5,0.5v15.9c0,0.3-0.2,0.5-0.5,0.5h-28.5c-0.3,0-0.5-0.2-0.5-0.5v-15.9
 			C922.7,105.8,922.9,105.6,923.2,105.6z"/>
-    <path class="st133" d="M930.8,106.9h19.5c0.3,0,0.5,0.2,0.5,0.5v13.1c0,0.3-0.2,0.5-0.5,0.5h-19.5c-0.3,0-0.5-0.2-0.5-0.5v-13.1
+    <path :myid="nodeInfo[0].id"  style='cursor:pointer;' @click='thermometerInfo' class="st133" d="M930.8,106.9h19.5c0.3,0,0.5,0.2,0.5,0.5v13.1c0,0.3-0.2,0.5-0.5,0.5h-19.5c-0.3,0-0.5-0.2-0.5-0.5v-13.1
 			C930.3,107.2,930.5,106.9,930.8,106.9z"/>
     <text transform="matrix(1 0 0 1 932.2496 113.6822)" class="st134 st135 st136">0.00</text>
     <rect x="932.2" y="115.2" class="st4" width="9.1" height="1.3"/>
@@ -1603,9 +1780,9 @@ rkJggg==" transform="matrix(0.48 0 0 0.48 1060.9995 61.8522)">
 			C937.5,272.3,937.9,272,938.4,272z"/>
     <path class="st131" d="M932.9,269.6h9.1l0,0v1.9c0,0.2-0.2,0.3-0.3,0.3l0,0h-8.4c-0.2,0-0.3-0.2-0.3-0.3c0,0,0,0,0,0L932.9,269.6
 			L932.9,269.6z"/>
-    <path class="st132" d="M923.2,252.8h28.5c0.3,0,0.5,0.2,0.5,0.5v15.9c0,0.3-0.2,0.5-0.5,0.5h-28.5c-0.3,0-0.5-0.2-0.5-0.5v-15.9
+    <path :myid="nodeInfo[1].id" @click='thermometerInfo' style="cursor: pointer" class="st132" d="M923.2,252.8h28.5c0.3,0,0.5,0.2,0.5,0.5v15.9c0,0.3-0.2,0.5-0.5,0.5h-28.5c-0.3,0-0.5-0.2-0.5-0.5v-15.9
 			C922.7,253,922.9,252.8,923.2,252.8z"/>
-    <path class="st133" d="M930.8,254.1h19.5c0.3,0,0.5,0.2,0.5,0.5v13.1c0,0.3-0.2,0.5-0.5,0.5h-19.5c-0.3,0-0.5-0.2-0.5-0.5v-13.1
+    <path :myid="nodeInfo[1].id" @click='thermometerInfo' style="cursor: pointer" class="st133" d="M930.8,254.1h19.5c0.3,0,0.5,0.2,0.5,0.5v13.1c0,0.3-0.2,0.5-0.5,0.5h-19.5c-0.3,0-0.5-0.2-0.5-0.5v-13.1
 			C930.3,254.4,930.5,254.1,930.8,254.1z"/>
     <text transform="matrix(1 0 0 1 932.2496 260.8823)" class="st134 st135 st136">0.00</text>
     <rect x="932.2" y="262.4" class="st4" width="9.1" height="1.3"/>
@@ -2407,8 +2584,8 @@ dObSt+j+Kz9RM9q/vP0f3/4nwAAZlvLtrFc/9AAAAABJRU5ErkJggg==" transform="matrix(0.48
     <rect x="595.7" y="140.5" class="st206" width="0.5" height="0.7"/>
     <rect x="595.7" y="143.5" class="st206" width="0.5" height="0.7"/>
     <rect x="595.7" y="146.5" class="st206" width="0.5" height="0.7"/>
-    <circle class="st132" cx="270.9" cy="523.2" r="11"/>
-    <circle class="st213" cx="270.9" cy="523.2" r="9.5"/>
+    <circle style="cursor:pointer;" @click='editInfo' :myid="nodeInfo[5].id" class="st132" cx="270.9" cy="523.2" r="11"/>
+    <circle style="cursor:pointer;" @click='editInfo' :myid="nodeInfo[5].id" class="st213" cx="270.9" cy="523.2" r="9.5"/>
     <path class="st214" d="M261.7,523.7c0-5.3,4.3-9.5,9.5-9.5c3,0,5.8,1.4,7.6,3.8c-2.9-4.4-8.8-5.6-13.2-2.7s-5.6,8.8-2.7,13.2
 			c0.1,0.2,0.2,0.3,0.3,0.5C262.3,527.3,261.7,525.5,261.7,523.7z"/>
     <circle class="st134" cx="270.8" cy="523.1" r="0.9"/>
@@ -2579,7 +2756,7 @@ dObSt+j+Kz9RM9q/vP0f3/4nwAAZlvLtrFc/9AAAAABJRU5ErkJggg==" transform="matrix(0.48
       <stop  offset="0.79" style="stop-color:#FE603B"/>
       <stop  offset="1" style="stop-color:#FF5F39"/>
 		</linearGradient>
-    <path style="fill:url(#SVGID_00000139276508045709259990000008307194153154800297_);" d="M325.5,533.7h-6.2
+    <path @click="editInfo" :myid="nodeInfo[15].id" style="cursor:pointer;fill:url(#SVGID_00000139276508045709259990000008307194153154800297_);" d="M325.5,533.7h-6.2
 			c-0.7,0-1.3-0.6-1.3-1.3v-0.6c0-1.1,0.9-2,2-2h4.9c1.1,0,2,0.9,2,2v0.4C327,533,326.3,533.7,325.5,533.7L325.5,533.7L325.5,533.7z
 			"/>
 
@@ -2594,7 +2771,7 @@ dObSt+j+Kz9RM9q/vP0f3/4nwAAZlvLtrFc/9AAAAABJRU5ErkJggg==" transform="matrix(0.48
 			<stop  offset="0" style="stop-color:#D6E8F4"/>
       <stop  offset="1" style="stop-color:#D1E3EF"/>
 		</linearGradient>
-    <circle style="fill:url(#SVGID_00000106136064511952510010000012538317124965956515_);" cx="322.5" cy="519.5" r="6.8"/>
+    <circle @click="editInfo" :myid="nodeInfo[15].id" style="cursor:pointer;fill:url(#SVGID_00000106136064511952510010000012538317124965956515_);" cx="322.5" cy="519.5" r="6.8"/>
 
     <linearGradient id="SVGID_00000004520622337701518570000009270617279659253173_" gradientUnits="userSpaceOnUse" x1="1427.5396" y1="225.3322" x2="1438.8595" y2="225.3322" gradientTransform="matrix(-1 0 0 -1 1755.639 744.7844)">
 			<stop  offset="0" style="stop-color:#9FAFBC"/>
@@ -2607,7 +2784,7 @@ dObSt+j+Kz9RM9q/vP0f3/4nwAAZlvLtrFc/9AAAAABJRU5ErkJggg==" transform="matrix(0.48
 			<stop  offset="0" style="stop-color:#D1E1EE"/>
       <stop  offset="1" style="stop-color:#CCDEEC"/>
 		</linearGradient>
-    <circle style="fill:url(#SVGID_00000062155036988668453880000014037481611861555850_);" cx="322.4" cy="519.5" r="5"/>
+    <circle  style="cursor:pointer;fill:url(#SVGID_00000062155036988668453880000014037481611861555850_);" cx="322.4" cy="519.5" r="5"/>
 
     <linearGradient id="SVGID_00000066485376641446146080000010059906155210667669_" gradientUnits="userSpaceOnUse" x1="1429.1895" y1="225.3322" x2="1437.1995" y2="225.3322" gradientTransform="matrix(-1 0 0 -1 1755.639 744.7844)">
 			<stop  offset="0" style="stop-color:#2F3D3D"/>
@@ -2633,7 +2810,7 @@ dObSt+j+Kz9RM9q/vP0f3/4nwAAZlvLtrFc/9AAAAABJRU5ErkJggg==" transform="matrix(0.48
     <text transform="matrix(1 0 0 1 319.8595 519.6423)" class="st244 st245 st246">0.000</text>
     <text transform="matrix(1 0 0 1 321.8495 521.3322)" class="st244 st245 st247">MpR</text>
     <circle class="st132" cx="1235.3" cy="201" r="11"/>
-    <circle class="st213" cx="1235.3" cy="201" r="9.5"/>
+    <circle :myid='nodeInfo[5].id' @click="editInfo" style="cursor: pointer" class="st213" cx="1235.3" cy="201" r="9.5"/>
     <path class="st214" d="M1226.1,201.5c0-5.3,4.3-9.5,9.5-9.5c3,0,5.8,1.4,7.6,3.8c-3-4.3-9-5.3-13.3-2.3s-5.3,9-2.3,13.3l0,0
 			C1226.7,205.2,1226.1,203.3,1226.1,201.5z"/>
     <circle class="st134" cx="1235.3" cy="201" r="0.9"/>
@@ -2802,7 +2979,7 @@ dObSt+j+Kz9RM9q/vP0f3/4nwAAZlvLtrFc/9AAAAABJRU5ErkJggg==" transform="matrix(0.48
       <stop  offset="0.79" style="stop-color:#FE603B"/>
       <stop  offset="1" style="stop-color:#FF5F39"/>
 		</linearGradient>
-    <path style="fill:url(#SVGID_00000036959202333602545750000011554181568706107272_);" d="M1289.9,211.5h-6.2
+    <path :myid='nodeInfo[15].id' @click='editInfo' style="cursor:pointer;fill:url(#SVGID_00000036959202333602545750000011554181568706107272_);" d="M1289.9,211.5h-6.2
 			c-0.7,0-1.3-0.6-1.3-1.3c0,0,0,0,0,0v-0.6c0-1.1,0.9-2,2-2h4.9c1.1,0,2,0.9,2,2v0.5C1291.3,210.9,1290.7,211.5,1289.9,211.5z"/>
 
     <linearGradient id="SVGID_00000027604838645494694010000012553367754623685273_" gradientUnits="userSpaceOnUse" x1="461.4395" y1="547.4522" x2="476.0196" y2="547.4522" gradientTransform="matrix(-1 0 0 -1 1755.639 744.7844)">
@@ -2816,7 +2993,7 @@ dObSt+j+Kz9RM9q/vP0f3/4nwAAZlvLtrFc/9AAAAABJRU5ErkJggg==" transform="matrix(0.48
 			<stop  offset="0" style="stop-color:#D6E8F4"/>
       <stop  offset="1" style="stop-color:#D1E3EF"/>
 		</linearGradient>
-    <circle style="fill:url(#SVGID_00000009592249405198582790000013025765426635169709_);" cx="1286.9" cy="197.3" r="6.8"/>
+    <circle :myid='nodeInfo[15].id' @click='editInfo' style="cursor:pointer;fill:url(#SVGID_00000009592249405198582790000013025765426635169709_);" cx="1286.9" cy="197.3" r="6.8"/>
 
     <linearGradient id="SVGID_00000054230918844488650140000005561816355116534428_" gradientUnits="userSpaceOnUse" x1="463.1295" y1="547.5122" x2="474.4495" y2="547.5122" gradientTransform="matrix(-1 0 0 -1 1755.639 744.7844)">
 			<stop  offset="0" style="stop-color:#9FAFBC"/>
@@ -4231,8 +4408,8 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
     <line l="2" class="st375" x1="393.8" y1="546.1" x2="136.3" y2="546.1"/>
     <line l="4" class="st375" x1="558.8" y1="235.2" x2="428.9" y2="235.2"/>
     <line l="5" class="st375" x1="1401.4" y1="223.6" x2="1220.7" y2="223.6"/>
-    <line l="10" class="st375" x1="1179.3" y1="141" x2="599.9" y2="141"/>
-    <line l="7" class="st375" x1="1179.3" y1="287.8" x2="599.9" y2="287.8"/>
+    <line  l="10" class="st375" x1="1179.3" y1="141" x2="599.9" y2="141"/>
+    <line  l="7" class="st375" x1="1179.3" y1="287.8" x2="599.9" y2="287.8"/>
 
     <linearGradient id="SVGID_00000002363049819617927270000004678387158824789888_" gradientUnits="userSpaceOnUse" x1="167.8896" y1="325.9088" x2="172.1796" y2="325.9488" gradientTransform="matrix(1 0 0 -1 0 857.1044)">
 			<stop  offset="0" style="stop-color:#29ABE2"/>
@@ -4263,7 +4440,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
       <stop  offset="0.5" style="stop-color:#0071BC"/>
       <stop  offset="0.95" style="stop-color:#0E89CC"/>
 		</linearGradient>
-    <path style="fill:url(#SVGID_00000161632854067418828460000007180238710695099529_);" d="M184.7,538.6c-6-0.6-8.4-5-14.8-5
+    <path  :myid="nodeInfo[6].id" @click='changeState' style="cursor:pointer;fill:url(#SVGID_00000161632854067418828460000007180238710695099529_);" d="M184.7,538.6c-6-0.6-8.4-5-14.8-5
 			s-10.2,5-15,5h-2.3v14.6h2.3c4.8,0,8.6,5,15,5c6.4,0,8.8-4.4,14.8-5h2.5v-14.6H184.7z"/>
 
     <linearGradient id="SVGID_00000129922660073621450240000014688470910053048759_" gradientUnits="userSpaceOnUse" x1="168.8895" y1="324.1022" x2="171.2795" y2="324.1022" gradientTransform="matrix(1 0 0 -1 0 851.7045)">
@@ -4512,7 +4689,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
       <stop  offset="0.5" style="stop-color:#0071BC"/>
       <stop  offset="0.95" style="stop-color:#0E89CC"/>
 		</linearGradient>
-    <path style="fill:url(#SVGID_00000008854835259533721750000017260205881431180967_);" d="M512.4,228.3c-5.8-0.6-8.1-4.8-14.2-4.8
+    <path :myid="nodeInfo[7].id"  @click='changeState' style="cursor:pointer;fill:url(#SVGID_00000008854835259533721750000017260205881431180967_);" d="M512.4,228.3c-5.8-0.6-8.1-4.8-14.2-4.8
 			s-9.8,4.8-14.4,4.8h-2.1v14h2.1c4.6,0,8.3,4.8,14.4,4.8s8.5-4.2,14.2-4.8h2.3v-14H512.4z"/>
 
     <linearGradient id="SVGID_00000033327879580737419270000008734190290183409844_" gradientUnits="userSpaceOnUse" x1="1132.3695" y1="732.9172" x2="1133.5195" y2="732.9172" gradientTransform="matrix(1 0 0 -1 0 851.7045)">
@@ -4694,7 +4871,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
       <stop  offset="0.5" style="stop-color:#0071BC"/>
       <stop  offset="0.95" style="stop-color:#0E89CC"/>
 		</linearGradient>
-    <path style="fill:url(#SVGID_00000106120213423968402720000006866960357472390549_);" d="M1147.1,133.6c-5.8-0.6-8.1-4.8-14.2-4.8
+    <path  :myid="nodeInfo[12].id"  @click='changeState' style="cursor:pointer;fill:url(#SVGID_00000106120213423968402720000006866960357472390549_);" d="M1147.1,133.6c-5.8-0.6-8.1-4.8-14.2-4.8
 			s-9.8,4.8-14.4,4.8h-2.1v14h2.1c4.6,0,8.3,4.8,14.4,4.8s8.5-4.2,14.2-4.8h2.3v-14H1147.1z"/>
 
     <linearGradient id="SVGID_00000121982882271534372310000011974102287818178202_" gradientUnits="userSpaceOnUse" x1="725.6295" y1="717.1223" x2="756.2195" y2="717.1223" gradientTransform="matrix(1 0 0 -1 0 857.1044)">
@@ -4704,7 +4881,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
       <stop  offset="0.94" style="stop-color:#FBB03B"/>
       <stop  offset="1" style="stop-color:#E89931"/>
 		</linearGradient>
-    <path style="fill:url(#SVGID_00000121982882271534372310000011974102287818178202_);" d="M749.3,161.1h-16.9
+    <path :myid="nodeInfo[2].id"  @click='editInfo' style="cursor:pointer;fill:url(#SVGID_00000121982882271534372310000011974102287818178202_);" d="M749.3,161.1h-16.9
 			c-3.8,0-6.8-3.1-6.8-6.9v-35.4h30.6v35.4C756.2,158,753.1,161.1,749.3,161.1z"/>
 
     <linearGradient id="SVGID_00000111888568490068603090000005151975076192891528_" gradientUnits="userSpaceOnUse" x1="642.0295" y1="732.9172" x2="643.1796" y2="732.9172" gradientTransform="matrix(1 0 0 -1 0 851.7045)">
@@ -4886,7 +5063,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
       <stop  offset="0.5" style="stop-color:#0071BC"/>
       <stop  offset="0.95" style="stop-color:#0E89CC"/>
 		</linearGradient>
-    <path style="fill:url(#SVGID_00000087381799627184286220000013633843645518537372_);" d="M656.8,133.6c-5.8-0.6-8.1-4.8-14.2-4.8
+    <path  :myid="nodeInfo[10].id"   @click='changeState' style="cursor:pointer;fill:url(#SVGID_00000087381799627184286220000013633843645518537372_);" d="M656.8,133.6c-5.8-0.6-8.1-4.8-14.2-4.8
 			s-9.8,4.8-14.4,4.8H626v14h2.1c4.6,0,8.3,4.8,14.4,4.8s8.5-4.2,14.2-4.8h2.3v-14H656.8z"/>
 
     <linearGradient id="SVGID_00000046299834024786568660000003461447710350368641_" gradientUnits="userSpaceOnUse" x1="642.0895" y1="585.5772" x2="643.2495" y2="585.5772" gradientTransform="matrix(1 0 0 -1 0 851.7045)">
@@ -5068,7 +5245,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
       <stop  offset="0.5" style="stop-color:#0071BC"/>
       <stop  offset="0.95" style="stop-color:#0E89CC"/>
 		</linearGradient>
-    <path  @click="changeState" style="fill:url(#SVGID_00000111169473895100250460000007913611503878974114_);" d="M656.8,280.9c-5.8-0.6-8.1-4.8-14.2-4.8
+    <path   :myid="nodeInfo[11].id" @click="changeState" style="cursor:pointer;fill:url(#SVGID_00000111169473895100250460000007913611503878974114_);" d="M656.8,280.9c-5.8-0.6-8.1-4.8-14.2-4.8
 			s-9.8,4.8-14.4,4.8H626v14h2.1c4.6,0,8.3,4.8,14.4,4.8s8.5-4.2,14.2-4.8h2.3v-14H656.8z"/>
 
     <linearGradient id="SVGID_00000091702262437165252930000017371357354883095435_" gradientUnits="userSpaceOnUse" x1="725.6295" y1="570.0472" x2="756.2195" y2="570.0472" gradientTransform="matrix(1 0 0 -1 0 857.1044)">
@@ -5078,7 +5255,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
       <stop  offset="0.94" style="stop-color:#FBB03B"/>
       <stop  offset="1" style="stop-color:#E89931"/>
 		</linearGradient>
-    <path style="fill:url(#SVGID_00000091702262437165252930000017371357354883095435_);" d="M749.3,308.2h-16.9
+    <path  @click="editInfo" :myid="nodeInfo[3].id" style="cursor:pointer;fill:url(#SVGID_00000091702262437165252930000017371357354883095435_);" d="M749.3,308.2h-16.9
 			c-3.8,0-6.9-3.1-6.9-6.9v-35.4h30.6v35.4C756.2,305.1,753.1,308.2,749.3,308.2z"/>
 
     <linearGradient id="SVGID_00000101824386565834078940000000241088949984522171_" gradientUnits="userSpaceOnUse" x1="1132.4294" y1="585.5772" x2="1133.5895" y2="585.5772" gradientTransform="matrix(1 0 0 -1 0 851.7045)">
@@ -5260,7 +5437,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
       <stop  offset="0.5" style="stop-color:#0071BC"/>
       <stop  offset="0.95" style="stop-color:#0E89CC"/>
 		</linearGradient>
-    <path style="fill:url(#SVGID_00000008113719737214781500000018183800599633113745_);" d="M1147.2,280.9c-5.8-0.6-8.1-4.8-14.2-4.8
+    <path   :myid="nodeInfo[13].id"   @click='changeState' style="cursor:pointer;fill:url(#SVGID_00000008113719737214781500000018183800599633113745_);" d="M1147.2,280.9c-5.8-0.6-8.1-4.8-14.2-4.8
 			s-9.8,4.8-14.4,4.8h-2.1v14h2.1c4.6,0,8.3,4.8,14.4,4.8s8.5-4.2,14.2-4.8h2.3v-14H1147.2z"/>
 
     <linearGradient id="SVGID_00000031207786773621326250000001235299970021604771_" gradientUnits="userSpaceOnUse" x1="1367.5394" y1="649.9172" x2="1368.6895" y2="649.9172" gradientTransform="matrix(1 0 0 -1 0 851.7045)">
@@ -5490,10 +5667,10 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
 		</g>
           <text transform="matrix(1 0 0 1 957.7819 544.9821)" class="st504 st497 st505">出站压力</text>
           <text transform="matrix(1 0 0 1 1048.3297 544.9821)" class="st504 st506 st505">MPa</text>
-          <text code="P004" key="PT3102AP" transform="matrix(1 0 0 1 1012.5084 544.9821)" class="st496 st507 st508">n/a</text>
+          <text code="P004" key="PT3102AP" transform="matrix(1 0 0 1 1012.5084 544.9821)" class="st496 st507 st508">{{ nodeInfo[5].numericalvalue }}</text>
           <text transform="matrix(1 0 0 1 957.7819 567.8679)" class="st504 st497 st505">出站温度</text>
           <text transform="matrix(1 0 0 1 1048.3297 567.8679)" class="st504 st506 st505">℃</text>
-          <text code="T004" key="TT3102AT" transform="matrix(1 0 0 1 1012.5084 567.8679)" class="st496 st507 st508">n/a</text>
+          <text code="T004" key="TT3102AT" transform="matrix(1 0 0 1 1012.5084 567.8679)" class="st496 st507 st508">{{nodeInfo[16].numericalvalue}}</text>
 	</g>
         <g id="组_1599" transform="translate(303.56 -88.368)">
 		<g id="路径_2459-2" transform="translate(312.021 -874.18)" class="st499">
@@ -5529,7 +5706,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
 		</g>
           <text transform="matrix(1 0 0 1 770.1907 546.5828)" class="st504 st497 st505">差压</text>
           <text transform="matrix(1 0 0 1 838.848 546.5828)" class="st504 st506 st505">KPa</text>
-          <text code="C002" key="PDT3102BPV" transform="matrix(1 0 0 1 804.0218 546.5828)" class="st496 st507 st508">n/a</text>
+          <text code="C002" key="PDT3102BPV" transform="matrix(1 0 0 1 804.0218 546.5828)" class="st496 st507 st508">{{nodeInfo[3].numericalvalue}}</text>
 	</g>
         <g id="组_1600" transform="translate(303.56 -238.44)">
 		<g id="路径_2459-3" transform="translate(312.021 -874.18)" class="st499">
@@ -5565,7 +5742,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
 		</g>
           <text transform="matrix(1 0 0 1 770.1907 547.3286)" class="st504 st497 st505">差压</text>
           <text transform="matrix(1 0 0 1 838.848 547.3286)" class="st504 st506 st505">KPa</text>
-          <text  code="C001" key="PDT3102APV" transform="matrix(1 0 0 1 804.0218 547.3286)" class="st496 st507 st508">n/a</text>
+          <text  code="C001" key="PDT3102APV" transform="matrix(1 0 0 1 804.0218 547.3286)" class="st496 st507 st508">{{nodeInfo[2].numericalvalue}}</text>
 	</g>
         <g id="组_1389" transform="translate(-324.44 149.309)">
 		<g id="路径_2459-4" transform="translate(525.779 -873.858)" class="st499">
@@ -5605,20 +5782,20 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
 		</g>
           <text transform="matrix(1 0 0 1 962.6229 543.4116)" class="st504 st497 st505">进站压力</text>
           <text transform="matrix(1 0 0 1 1053.1707 543.4116)" class="st504 st506 st505">MPa</text>
-          <text code="P001" key="PT3102BP" transform="matrix(1 0 0 1 1017.3494 543.4116)" class="st496 st507 st508">n/a</text>
+          <text code="P001" key="PT3102BP" transform="matrix(1 0 0 1 1017.3494 543.4116)" class="st496 st507 st508">{{ nodeInfo[4].numericalvalue }}</text>
           <text transform="matrix(1 0 0 1 962.6229 566.2974)" class="st504 st497 st505">进站温度</text>
           <text transform="matrix(1 0 0 1 1053.1707 566.2974)" class="st504 st506 st505">℃</text>
-          <text code="T001" key="TT3102BT" transform="matrix(1 0 0 1 1017.3494 566.2974)" class="st496 st507 st508">n/a</text>
+          <text code="T001" key="TT3102BT" transform="matrix(1 0 0 1 1017.3494 566.2974)" class="st496 st507 st508">{{ nodeInfo[15].numericalvalue }}</text>
 	</g>
         <text transform="matrix(1 0 0 1 511.8142 810.8818)" class="st496 st507 st508">MV101#阀</text>
-        <text transform="matrix(1 0 0 1 637.6257 823.8173)" class="st496 st507 st508">TT3102B#温度</text>
-        <text transform="matrix(1 0 0 1 637.6257 803.9169)" class="st496 st507 st508">PT3102B#压力</text>
-        <text transform="matrix(1 0 0 1 1274.0076 396.9492)" class="st496 st507 st508">流量计FT101</text>
-        <text transform="matrix(1 0 0 1 1068.0364 412.8696)" class="st496 st507 st508">PDT3102A差压</text>
-        <text transform="matrix(1 0 0 1 1274.0076 542.2236)" class="st496 st507 st508">流量计FT102</text>
-        <text transform="matrix(1 0 0 1 1598.8259 481.3305)" class="st496 st507 st508">PT3102A压力</text>
-        <text transform="matrix(1 0 0 1 1598.8259 501.2314)" class="st496 st507 st508">TT3102A温度</text>
-        <text transform="matrix(1 0 0 1 1068.0364 558.144)" class="st496 st507 st508">PDT3102A差压</text>
+        <text transform="matrix(1 0 0 1 637.6257 823.8173)" class="st496 st507 st508">{{nodeInfo[16].name  }}</text>
+        <text transform="matrix(1 0 0 1 637.6257 803.9169)" class="st496 st507 st508">{{nodeInfo[4].name  }}</text>
+        <text transform="matrix(1 0 0 1 1274.0076 396.9492)" class="st496 st507 st508">{{nodeInfo[0].name }}</text>
+        <text transform="matrix(1 0 0 1 1068.0364 412.8696)" class="st496 st507 st508">{{nodeInfo[2].name  }}</text>
+        <text transform="matrix(1 0 0 1 1274.0076 542.2236)" class="st496 st507 st508">{{nodeInfo[1].name  }}</text>
+        <text transform="matrix(1 0 0 1 1598.8259 481.3305)" class="st496 st507 st508">{{nodeInfo[5].name }}</text>
+        <text transform="matrix(1 0 0 1 1598.8259 501.2314)" class="st496 st507 st508">{{nodeInfo[15].name  }}</text>
+        <text transform="matrix(1 0 0 1 1068.0364 558.144)" class="st496 st507 st508">{{nodeInfo[3].name}}</text>
         <g id="组_1385" transform="translate(286.06 -249.137)">
 		<g id="路径_2459-5" transform="translate(526.021 -874.18)" class="st499">
 			<path class="st500" d="M561.3,1455.2H448.7l-6-7v-49.4h113.7l4.9,5.7V1455.2z"/>
@@ -5655,10 +5832,10 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
 		</g>
           <text transform="matrix(1 0 0 1 983.47 545.3918)" class="st504 st497 st505">压力</text>
           <text transform="matrix(1 0 0 1 1050.137 545.3918)" class="st504 st506 st505">MPa</text>
-          <text code="P002" key="microtimeP101" transform="matrix(1 0 0 1 1014.3157 545.3918)" class="st496 st507 st508">n/a</text>
+          <text code="P002" key="microtimeP101" transform="matrix(1 0 0 1 1014.3157 545.3918)" class="st496 st507 st508">{{nodeInfo[0].pressurevalue}}</text>
           <text transform="matrix(1 0 0 1 983.47 568.2776)" class="st504 st497 st505">温度</text>
           <text transform="matrix(1 0 0 1 1050.137 568.2776)" class="st504 st506 st505">℃</text>
-          <text code="T002" key="microtimeT101" transform="matrix(1 0 0 1 1014.3157 568.2776)" class="st496 st507 st508">n/a</text>
+          <text code="T002" key="microtimeT101" transform="matrix(1 0 0 1 1014.3157 568.2776)" class="st496 st507 st508">{{nodeInfo[0].temperaturevalue}}</text>
 	</g>
         <g id="组_1601" transform="translate(286.06 -100.066)">
 		<g id="路径_2459-6" transform="translate(526.021 -874.18)" class="st499">
@@ -5696,14 +5873,14 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
 		</g>
           <text transform="matrix(1 0 0 1 983.47 544.6509)" class="st504 st497 st505">压力</text>
           <text transform="matrix(1 0 0 1 1050.137 544.6509)" class="st504 st506 st505">MPa</text>
-          <text code="P003" key="microtimeP102" transform="matrix(1 0 0 1 1014.3157 544.6509)" class="st496 st507 st508">n/a</text>
+          <text code="P003" key="microtimeP102" transform="matrix(1 0 0 1 1014.3157 544.6509)" class="st496 st507 st508">{{ nodeInfo[1].pressurevalue }}</text>
           <text transform="matrix(1 0 0 1 983.47 567.5366)" class="st504 st497 st505">温度</text>
           <text transform="matrix(1 0 0 1 1050.137 567.5366)" class="st504 st506 st505">℃</text>
-          <text code="T003" key="microtimeT102" transform="matrix(1 0 0 1 1014.3157 567.5366)" class="st496 st507 st508">n/a</text>
+          <text code="T003" key="microtimeT102" transform="matrix(1 0 0 1 1014.3157 567.5366)" class="st496 st507 st508">{{ nodeInfo[1].temperaturevalue }}</text>
 	</g>
 </g>
       <g>
-	<circle l="1" class="st509" cx="170.1" cy="545.7" r="10"/>
+	<circle :myid="nodeInfo[6].id" @click='changeState' style='cursor:pointer'  l="1" class="st509" cx="170.1" cy="545.7" r="10"/>
         <path class="st510" d="M170.1,536.2c5.2,0,9.5,4.2,9.5,9.5s-4.2,9.5-9.5,9.5c-5.2,0-9.5-4.2-9.5-9.5S164.9,536.2,170.1,536.2
 		 M170.1,535.2c-5.8,0-10.5,4.7-10.5,10.5s4.7,10.5,10.5,10.5s10.5-4.7,10.5-10.5S175.9,535.2,170.1,535.2L170.1,535.2z"/>
 </g>
@@ -5712,6 +5889,23 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
 
 </template>
 <style>
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.text {
+  font-size: 14px;
+}
+
+.item {
+  margin-bottom: 18px;
+}
+
+.box-card {
+  width: 240px;
+}
 .st0{fill:url(#SVGID_1_);}
 .st1{fill:url(#SVGID_00000108295015547130136270000005168149360236497557_);}
 .st2{clip-path:url(#SVGID_00000080903970542216638390000002248128268409944754_);}

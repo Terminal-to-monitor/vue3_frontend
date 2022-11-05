@@ -1,5 +1,5 @@
 import request from "./index";
-
+import type {update} from "./type";
 //登录接口请求
 export const reqLogin = (userName: string, password: string) => request('/user/login',{method:'post',data:{userName,password}})
 
@@ -14,3 +14,9 @@ export const reqEditCzInfo = (id: string, newName: string) => request('/terminal
 
 //删除场站信息
 export const reqDeleteCZ = (id: string) => request('terminalmessage/delete/1',{method:'delete'})
+
+//阀门开关接口
+export const reqSwitch = (data: update) => request('element/update',{method:'put',data})
+
+//节点信息修改
+export const reqSaveNodeInfo = (data: any) => request('element/update',{method:'put',data})

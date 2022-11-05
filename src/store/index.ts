@@ -9,7 +9,6 @@ export const  useStore = defineStore('user', {
             token: '',
             permissions: [],
             terminalInfo: [],
-            nodeInfo:[]
         }
     },
     actions: {
@@ -17,9 +16,9 @@ export const  useStore = defineStore('user', {
         async login(userName: string, password: string) {
             const result = await reqLogin(userName, password)
             if (result.data.code === 200) {
-                this.permissions = result.data.data.permissions
+                localStorage.setItem('permissions',result.data.data.permissions)
                 this.token = result.data.data.token
-                window.localStorage.setItem('token', this.token)
+                localStorage.setItem('token', this.token)
                 return result.data
             } else {
                 console.log(result.data)
@@ -38,16 +37,12 @@ export const  useStore = defineStore('user', {
            }
         },
         async getNodeInfo(id: string){
-           try {
                const result = await reqGetNodeInfo(id)
                if(result.data.code === 200){
-                   this.nodeInfo = result.data.data
+                   return result.data
                }else{
                    console.log(result.data)
                }
-           }catch (e){
-               throw new Error('something wrong')
-           }
         },
         async changeCzName(id: string, name: string){
             const result = await reqEditCzInfo(id, name)
@@ -62,15 +57,6 @@ export const  useStore = defineStore('user', {
             }
         }
     },
-    persist:{
-        enabled:true,
-        strategies:[
-            {
-                key:'permissions',
-                paths:['permissions']
-            }
-        ]
-    }
     })
 
 

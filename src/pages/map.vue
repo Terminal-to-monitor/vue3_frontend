@@ -3,12 +3,11 @@ import {onMounted, nextTick, ref, reactive} from "vue";
 import {useStore} from "../store";
 import {useRouter} from "vue-router";
 import {emsg, smsg} from "../hooks/message";
-
+import Authority from "../hooks/permissions";
 const store = useStore()
 const router = useRouter()
 
-
-let map : any
+let map: any
 let markerList: any[] = []
 let drawer2 = ref<boolean>(false)
 const direction = ref<string>('rtl')
@@ -65,18 +64,6 @@ for (let i = 0; i < markerList.length; i++) {
 }
 }
 
-const addHandler = () => {
-  markerList.forEach((item) => {
-    item.on('click',()=>{
-      router.push({
-        path: '/monitoringpage',
-        query:{
-          id:item.getExtData()
-        }
-      })
-    })
-  })
-}
 //编辑场站信息
 const editInfo = () => {
   markerList.forEach((item) => {
@@ -119,6 +106,15 @@ const deleteCZ = async () =>{
   }
 }
 
+const enter = () => {
+  if(curName.id !== '1'){
+    emsg('场站已关闭')
+    return
+  }
+  router.push({path:'/monitoringpage',query:{
+      id:curName.id
+    }})
+}
 onMounted(() => {
   getsigninfo()
   nextTick(()=>{
@@ -127,11 +123,12 @@ onMounted(() => {
        console.log("地图加载完成！")
        setTimeout(()=>{
         add()
-      },100)
+      },1000)
      })
 
   })
 })
+
 </script>
 
 <template>
@@ -172,11 +169,9 @@ onMounted(() => {
     <template #footer>
       <div style="flex: auto">
         <el-button @click="drawer2 = false">取消</el-button>
-        <el-button type="danger" @click="deleteCZ">删除</el-button>
-        <el-button type="primary" @click='changeName'>保存</el-button>
-        <router-link to="/monitoringpage">
-        <el-button class="ml-2" type="primary">进入</el-button>
-        </router-link>
+        <el-button type="danger" @click="deleteCZ" :disabled="Authority.deleteAuthority === -1">删除</el-button>
+        <el-button type="primary" @click='changeName' :disabled="Authority.updateAuthority !== -1" >保存</el-button>
+        <el-button class="ml-2" type="primary" @click="enter">进入</el-button>
       </div>
     </template>
   </el-drawer>
