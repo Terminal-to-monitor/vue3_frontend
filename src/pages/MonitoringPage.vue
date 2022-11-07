@@ -4,6 +4,7 @@ import {useRoute} from "vue-router";
 import {ref, onMounted} from "vue";
 import {reqSwitch,reqSaveNodeInfo} from "../service/api";
 import {emsg,smsg} from "../hooks/message";
+import _ from 'lodash'
 
 const store = useStore()
 const route = useRoute()
@@ -20,7 +21,8 @@ let valve = ref({
   s4:true,
   s5:true,
   s6:true,
-  s7:true
+  s7:true,
+  s8:true
  })
 //流向显示
 const valveSwitch = (mode: string ) => {
@@ -33,18 +35,27 @@ const valveSwitch = (mode: string ) => {
         valve.value.s5 = false
         valve.value.s6 = false
         valve.value.s7 = false
+        valve.value.s8 = false
         break;
       case '2' :
         valve.value.s3 = false
         valve.value.s2 = false
         valve.value.s5 = false
+        valve.value.s8 = false
         break;
       case '3' :
         valve.value.s4 =  false
         valve.value.s6 =  false
+        valve.value.s8 = false
         break;
-      case '4' : valve.value.s5 = false ; break;
-      case '5' : valve.value.s7 = false ; break;
+      case '4' :
+        valve.value.s5 = false
+        valve.value.s8 = false
+       break;
+      case '5' :
+        valve.value.s7 = false
+        valve.value.s8 = false
+        break;
     }
 }
 //获取节点信息
@@ -116,6 +127,7 @@ const showIf = (id:number,lines: any,show: string) => {
      lines[3].style.visibility = show
      lines[4].style.visibility = show
      lines[6].style.visibility = show
+     lines[7].style.visibility = show
      lines[8].style.visibility = show
      lines[9].style.visibility = show
         break;
@@ -137,7 +149,7 @@ const showIf = (id:number,lines: any,show: string) => {
  }
 }
 //阀门开关
-const changeState1 = async(id: number) =>{
+const c = async(id: number) =>{
   const item: any = nodeInfo.value[id]
   const lines = document.getElementsByTagName('line')
   item.status = item.status ===  1 ? 0 : 1
@@ -178,6 +190,7 @@ const changeState1 = async(id: number) =>{
 
 }
 
+const changeState1 = _.debounce(c,500)
 //编辑普通节点信息
 const editInfo = (e: any) => {
   const id = e.target.getAttribute('myid')
@@ -4517,7 +4530,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
     <line v-show="valve.s7" l="8" class="st375" x1="1204.2" y1="234.6" x2="1204.2" y2="261.4"/>
     <line l="2" class="st375" x1="393.8" y1="546.1" x2="136.3" y2="546.1"/>
     <line v-show="valve.s1" l="4" class="st375" x1="558.8" y1="235.2" x2="428.9" y2="235.2"/>
-    <line l="5" class="st375" x1="1401.4" y1="223.6" x2="1220.7" y2="223.6"/>
+    <line v-show="valve.s8" l="5" class="st375" x1="1401.4" y1="223.6" x2="1220.7" y2="223.6"/>
     <line v-show="valve.s3"  l="10" class="st375" x1="1179.3" y1="141" x2="599.9" y2="141"/>
     <line  v-show="valve.s4"  l="7" class="st375" x1="1179.3" y1="287.8" x2="599.9" y2="287.8"/>
 
