@@ -91,10 +91,10 @@
   dependencies:
     "@types/lodash" "*"
 
-"@types/lodash@*", "@types/lodash@^4.14.182":
-  "integrity" "sha512-eHcVlLXP0c2FlMPm56ITode2AgLMSa6aJ05JTTbYbI+7EMkCEE5qk2E41d5g2lCVTqRe0GnnRFurmlCsDODrPw=="
-  "resolved" "https://registry.npmmirror.com/@types/lodash/-/lodash-4.14.186.tgz"
-  "version" "4.14.186"
+"@types/lodash@*", "@types/lodash@^4.14.182", "@types/lodash@^4.14.188":
+  "integrity" "sha512-zmEmF5OIM3rb7SbLCFYoQhO4dGt2FRM9AMkxvA3LaADOF1n8in/zGJlWji9fmafLoNyz+FoL6FE0SLtGIArD7w=="
+  "resolved" "https://registry.npmmirror.com/@types/lodash/-/lodash-4.14.188.tgz"
+  "version" "4.14.188"
 
 "@types/web-bluetooth@^0.0.16":
   "integrity" "sha512-oh8q2Zc32S6gd/j50GowEjKLoOVOwHP/bWVjKJInBwQqdOYMdPrf1oVlelTlyfFK3CKxL1uahMDAr+vy8T7yMQ=="

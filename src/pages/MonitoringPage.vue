@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import {useStore} from "../store";
 import {useRoute} from "vue-router";
-import {ref, onMounted, onBeforeUnmount} from "vue";
+import {ref, onMounted} from "vue";
 import {reqSwitch,reqSaveNodeInfo} from "../service/api";
 import {emsg,smsg} from "../hooks/message";
 
@@ -12,13 +12,46 @@ let drawer = ref<boolean>(false)
 let drawer2 = ref<boolean>(false)
 const direction = ref<string>('rtl')
 
-//阀门流向显示
-//let valve3 = ref<boolean>(true)
 
+let valve = ref({
+  s1:true,
+  s2:true,
+  s3:true,
+  s4:true,
+  s5:true,
+  s6:true,
+  s7:true
+ })
+//流向显示
+const valveSwitch = (mode: string ) => {
+    switch (mode){
+      case '1' :
+        valve.value.s1 = false
+        valve.value.s2 = false
+        valve.value.s3 = false
+        valve.value.s4 = false
+        valve.value.s5 = false
+        valve.value.s6 = false
+        valve.value.s7 = false
+        break;
+      case '2' :
+        valve.value.s3 = false
+        valve.value.s2 = false
+        valve.value.s5 = false
+        break;
+      case '3' :
+        valve.value.s4 =  false
+        valve.value.s6 =  false
+        break;
+      case '4' : valve.value.s5 = false ; break;
+      case '5' : valve.value.s7 = false ; break;
+    }
+}
 //获取节点信息
 const getNode = async () => {
   const result = await store.getNodeInfo(route.query.id as string)
   nodeInfo.value = result.data
+  console.log(nodeInfo.value)
 }
 getNode()
 
@@ -29,7 +62,36 @@ let thermometer = ref<any>({})
 let wrongInfo = ref<any>([])
 let timer: number
 
-console.log(nodeInfo)
+//阀门流向初始化渲染
+const vShow = () => {
+  const lines = document.getElementsByTagName('line')
+  if(nodeInfo.value[6]['status'] === 0 ){
+    for (let i = 0; i < lines.length ; i++) {
+      lines[i].style.visibility = 'hidden'
+    }
+    return
+  }
+  if(nodeInfo.value[7]['status'] === 0 ){
+    valveSwitch('1')
+    return
+  }
+  if(nodeInfo.value[10]['status'] === 0){
+    valveSwitch('2')
+    return
+  }
+  if(nodeInfo.value[11]['status'] === 0){
+    valveSwitch('3')
+    return
+  }
+  if(nodeInfo.value[12]['status'] === 0){
+    valveSwitch('4')
+    return
+  }
+  if(nodeInfo.value[13]['status'] === 0){
+    valveSwitch('5')
+    return
+  }
+}
 
 //获取错误信息
 const getWrong = () => {
@@ -38,34 +100,82 @@ const getWrong = () => {
       wrongInfo.value.push(...item.wrong)
     }
   })
-
-  console.log(wrongInfo.value)
 }
 
+//动态控制流向
+const showIf = (id:number,lines: any,show: string) => {
+ switch (id){
+   case 6 :
+     for (let i = 0; i < lines.length ; i++) {
+       lines[i].style.visibility = show
+     }
+         break;
+   case 7 :
+     lines[1].style.visibility = show
+     lines[2].style.visibility = show
+     lines[3].style.visibility = show
+     lines[4].style.visibility = show
+     lines[6].style.visibility = show
+     lines[8].style.visibility = show
+     lines[9].style.visibility = show
+        break;
+   case 10 :
+     lines[1].style.visibility = show
+     lines[3].style.visibility = show
+     lines[8].style.visibility = show
+         break;
+   case 11 :
+     lines[4].style.visibility = show
+     lines[9].style.visibility = show
+     break;
+   case 12 :
+     lines[3].style.visibility = show
+     break;
+   case 13 :
+     lines[4].style.visibility = show
+     break;
+ }
+}
 //阀门开关
-const changeState = (e: any) => {
-  const id = e.target.getAttribute('myid')
-  nodeInfo.value.forEach((item: any) =>{
-    if(id == item.id){
-      const data = {
-        id,
-        name:item.name,
-        status:item.status === 1 ? 0 : 1,
-        terminalId:item.terminalId,
-        type:item.type
-      }
-     reqSwitch(data).then((res)=>{
-        if(res.data.code == 200 && res.data.msg == '更新成功'){
-          smsg('更新成功')
-          getNode()
-          const color = data.status === 1 ? 'blue' : 'red'
-          e.target.style.fill = color
-        }else{
-          emsg('更新失败')
-        }
-      })
+const changeState1 = async(id: number) =>{
+  const item: any = nodeInfo.value[id]
+  const lines = document.getElementsByTagName('line')
+  item.status = item.status ===  1 ? 0 : 1
+  if(id === 7 && nodeInfo.value[6]['status'] === 0 ){
+      emsg('前向阀门已关闭')
+      return
+  }
+  if(id === 10 && (nodeInfo.value[6]['status'] === 0 || nodeInfo.value[7]['status'] === 0) ){
+    emsg('前向阀门已关闭')
+    return
+  }
+  if(id === 11 && (nodeInfo.value[6]['status'] === 0 || nodeInfo.value[7]['status'] === 0 || nodeInfo.value[10]['status'] === 0 ) ){
+    emsg('前向阀门已关闭')
+    return
+  }
+  if(id === 12 && (nodeInfo.value[6]['status'] === 0 || nodeInfo.value[7]['status'] === 0  || nodeInfo.value[11]['status'] === 0 ) ){
+    emsg('前向阀门已关闭')
+    return
+  }
+  if(id === 13 && (nodeInfo.value[6]['status'] === 0 || nodeInfo.value[7]['status'] === 0 || nodeInfo.value[10]['status'] === 0 || nodeInfo.value[11]['status'] === 0 || nodeInfo.value[12]['status'] === 0 ) ){
+    emsg('前向阀门已关闭')
+    return
+  }
+  const result = await reqSwitch(item)
+    if(result.data.code == 200){
+      getNode()
+    setTimeout(()=>{
+      const status = nodeInfo.value[id]['status']
+      const info = status === 1 ? '阀门已开启':'阀门已关闭'
+      const show = status === 1 ? 'visible':'hidden'
+      console.log(id,status,show)
+      showIf(id,lines,show)
+      smsg(info)
+    },500)
+    }else{
+      emsg('网络错误')
     }
-  })
+
 }
 
 //编辑普通节点信息
@@ -101,7 +211,6 @@ const saveInfo = async (isThermometer: string) => {
     drawer.value = false
     drawer2.value = false
     getNode()
-    console.log(nodeInfo.value)
   }else {
     emsg('更新失败')
     drawer.value = false
@@ -114,6 +223,7 @@ onMounted(()=>{
     getNode()
   },3000)*/
   getWrong()
+  vShow()
 })
 /*onBeforeUnmount(()=>{
   clearInterval(timer)
@@ -4401,15 +4511,15 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
     <rect x="1065.1" y="83.9" class="st4" width="0.1" height="0.1"/>
     <rect x="1065.1" y="83.4" class="st4" width="0.1" height="0.1"/>
     <line l="3" class="st375" x1="410.5" y1="263.6" x2="410.5" y2="545.5"/>
-    <line l="9" class="st375" x1="574.5" y1="168" x2="574.5" y2="234.5"/>
-    <line l="6" class="st375" x1="574.5" y1="234.6" x2="574.5" y2="261.4"/>
-    <line l="11" class="st375" x1="1204.2" y1="168" x2="1204.2" y2="234.5"/>
-    <line l="8" class="st375" x1="1204.2" y1="234.6" x2="1204.2" y2="261.4"/>
+    <line  v-show="valve.s2" l="9" class="st375" x1="574.5" y1="168" x2="574.5" y2="234.5"/>
+    <line  v-show="valve.s6" l="6" class="st375" x1="574.5" y1="234.6" x2="574.5" y2="261.4"/>
+    <line v-show="valve.s5" l="11" class="st375" x1="1204.2" y1="168" x2="1204.2" y2="234.5"/>
+    <line v-show="valve.s7" l="8" class="st375" x1="1204.2" y1="234.6" x2="1204.2" y2="261.4"/>
     <line l="2" class="st375" x1="393.8" y1="546.1" x2="136.3" y2="546.1"/>
-    <line l="4" class="st375" x1="558.8" y1="235.2" x2="428.9" y2="235.2"/>
+    <line v-show="valve.s1" l="4" class="st375" x1="558.8" y1="235.2" x2="428.9" y2="235.2"/>
     <line l="5" class="st375" x1="1401.4" y1="223.6" x2="1220.7" y2="223.6"/>
-    <line  l="10" class="st375" x1="1179.3" y1="141" x2="599.9" y2="141"/>
-    <line  l="7" class="st375" x1="1179.3" y1="287.8" x2="599.9" y2="287.8"/>
+    <line v-show="valve.s3"  l="10" class="st375" x1="1179.3" y1="141" x2="599.9" y2="141"/>
+    <line  v-show="valve.s4"  l="7" class="st375" x1="1179.3" y1="287.8" x2="599.9" y2="287.8"/>
 
     <linearGradient id="SVGID_00000002363049819617927270000004678387158824789888_" gradientUnits="userSpaceOnUse" x1="167.8896" y1="325.9088" x2="172.1796" y2="325.9488" gradientTransform="matrix(1 0 0 -1 0 857.1044)">
 			<stop  offset="0" style="stop-color:#29ABE2"/>
@@ -4440,7 +4550,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
       <stop  offset="0.5" style="stop-color:#0071BC"/>
       <stop  offset="0.95" style="stop-color:#0E89CC"/>
 		</linearGradient>
-    <path  :myid="nodeInfo[6].id" @click='changeState' style="cursor:pointer;fill:url(#SVGID_00000161632854067418828460000007180238710695099529_);" d="M184.7,538.6c-6-0.6-8.4-5-14.8-5
+    <path  :myid="nodeInfo[6].id" @click='changeState1(6)' style="cursor:pointer;fill:url(#SVGID_00000161632854067418828460000007180238710695099529_);" d="M184.7,538.6c-6-0.6-8.4-5-14.8-5
 			s-10.2,5-15,5h-2.3v14.6h2.3c4.8,0,8.6,5,15,5c6.4,0,8.8-4.4,14.8-5h2.5v-14.6H184.7z"/>
 
     <linearGradient id="SVGID_00000129922660073621450240000014688470910053048759_" gradientUnits="userSpaceOnUse" x1="168.8895" y1="324.1022" x2="171.2795" y2="324.1022" gradientTransform="matrix(1 0 0 -1 0 851.7045)">
@@ -4689,7 +4799,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
       <stop  offset="0.5" style="stop-color:#0071BC"/>
       <stop  offset="0.95" style="stop-color:#0E89CC"/>
 		</linearGradient>
-    <path :myid="nodeInfo[7].id"  @click='changeState' style="cursor:pointer;fill:url(#SVGID_00000008854835259533721750000017260205881431180967_);" d="M512.4,228.3c-5.8-0.6-8.1-4.8-14.2-4.8
+    <path :myid="nodeInfo[7].id"  @click="changeState1(7)" style="cursor:pointer;fill:url(#SVGID_00000008854835259533721750000017260205881431180967_);" d="M512.4,228.3c-5.8-0.6-8.1-4.8-14.2-4.8
 			s-9.8,4.8-14.4,4.8h-2.1v14h2.1c4.6,0,8.3,4.8,14.4,4.8s8.5-4.2,14.2-4.8h2.3v-14H512.4z"/>
 
     <linearGradient id="SVGID_00000033327879580737419270000008734190290183409844_" gradientUnits="userSpaceOnUse" x1="1132.3695" y1="732.9172" x2="1133.5195" y2="732.9172" gradientTransform="matrix(1 0 0 -1 0 851.7045)">
@@ -4871,7 +4981,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
       <stop  offset="0.5" style="stop-color:#0071BC"/>
       <stop  offset="0.95" style="stop-color:#0E89CC"/>
 		</linearGradient>
-    <path  :myid="nodeInfo[12].id"  @click='changeState' style="cursor:pointer;fill:url(#SVGID_00000106120213423968402720000006866960357472390549_);" d="M1147.1,133.6c-5.8-0.6-8.1-4.8-14.2-4.8
+    <path  :myid="nodeInfo[12].id"  @click="changeState1(12)" style="cursor:pointer;fill:url(#SVGID_00000106120213423968402720000006866960357472390549_);" d="M1147.1,133.6c-5.8-0.6-8.1-4.8-14.2-4.8
 			s-9.8,4.8-14.4,4.8h-2.1v14h2.1c4.6,0,8.3,4.8,14.4,4.8s8.5-4.2,14.2-4.8h2.3v-14H1147.1z"/>
 
     <linearGradient id="SVGID_00000121982882271534372310000011974102287818178202_" gradientUnits="userSpaceOnUse" x1="725.6295" y1="717.1223" x2="756.2195" y2="717.1223" gradientTransform="matrix(1 0 0 -1 0 857.1044)">
@@ -5063,7 +5173,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
       <stop  offset="0.5" style="stop-color:#0071BC"/>
       <stop  offset="0.95" style="stop-color:#0E89CC"/>
 		</linearGradient>
-    <path  :myid="nodeInfo[10].id"   @click='changeState' style="cursor:pointer;fill:url(#SVGID_00000087381799627184286220000013633843645518537372_);" d="M656.8,133.6c-5.8-0.6-8.1-4.8-14.2-4.8
+    <path  :myid="nodeInfo[10].id"   @click="changeState1(10)" style="cursor:pointer;fill:url(#SVGID_00000087381799627184286220000013633843645518537372_);" d="M656.8,133.6c-5.8-0.6-8.1-4.8-14.2-4.8
 			s-9.8,4.8-14.4,4.8H626v14h2.1c4.6,0,8.3,4.8,14.4,4.8s8.5-4.2,14.2-4.8h2.3v-14H656.8z"/>
 
     <linearGradient id="SVGID_00000046299834024786568660000003461447710350368641_" gradientUnits="userSpaceOnUse" x1="642.0895" y1="585.5772" x2="643.2495" y2="585.5772" gradientTransform="matrix(1 0 0 -1 0 851.7045)">
@@ -5245,7 +5355,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
       <stop  offset="0.5" style="stop-color:#0071BC"/>
       <stop  offset="0.95" style="stop-color:#0E89CC"/>
 		</linearGradient>
-    <path   :myid="nodeInfo[11].id" @click="changeState" style="cursor:pointer;fill:url(#SVGID_00000111169473895100250460000007913611503878974114_);" d="M656.8,280.9c-5.8-0.6-8.1-4.8-14.2-4.8
+    <path   :myid="nodeInfo[11].id" @click="changeState1(11)" style="cursor:pointer;fill:url(#SVGID_00000111169473895100250460000007913611503878974114_);" d="M656.8,280.9c-5.8-0.6-8.1-4.8-14.2-4.8
 			s-9.8,4.8-14.4,4.8H626v14h2.1c4.6,0,8.3,4.8,14.4,4.8s8.5-4.2,14.2-4.8h2.3v-14H656.8z"/>
 
     <linearGradient id="SVGID_00000091702262437165252930000017371357354883095435_" gradientUnits="userSpaceOnUse" x1="725.6295" y1="570.0472" x2="756.2195" y2="570.0472" gradientTransform="matrix(1 0 0 -1 0 857.1044)">
@@ -5437,7 +5547,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
       <stop  offset="0.5" style="stop-color:#0071BC"/>
       <stop  offset="0.95" style="stop-color:#0E89CC"/>
 		</linearGradient>
-    <path   :myid="nodeInfo[13].id"   @click='changeState' style="cursor:pointer;fill:url(#SVGID_00000008113719737214781500000018183800599633113745_);" d="M1147.2,280.9c-5.8-0.6-8.1-4.8-14.2-4.8
+    <path   :myid="nodeInfo[13].id"   @click="changeState1(13)" style="cursor:pointer;fill:url(#SVGID_00000008113719737214781500000018183800599633113745_);" d="M1147.2,280.9c-5.8-0.6-8.1-4.8-14.2-4.8
 			s-9.8,4.8-14.4,4.8h-2.1v14h2.1c4.6,0,8.3,4.8,14.4,4.8s8.5-4.2,14.2-4.8h2.3v-14H1147.2z"/>
 
     <linearGradient id="SVGID_00000031207786773621326250000001235299970021604771_" gradientUnits="userSpaceOnUse" x1="1367.5394" y1="649.9172" x2="1368.6895" y2="649.9172" gradientTransform="matrix(1 0 0 -1 0 851.7045)">
@@ -5880,7 +5990,7 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
 	</g>
 </g>
       <g>
-	<circle :myid="nodeInfo[6].id" @click='changeState' style='cursor:pointer'  l="1" class="st509" cx="170.1" cy="545.7" r="10"/>
+	<circle :myid="nodeInfo[6].id" @click='changeState1(6)' style='cursor:pointer'  l="1" class="st509" cx="170.1" cy="545.7" r="10"/>
         <path class="st510" d="M170.1,536.2c5.2,0,9.5,4.2,9.5,9.5s-4.2,9.5-9.5,9.5c-5.2,0-9.5-4.2-9.5-9.5S164.9,536.2,170.1,536.2
 		 M170.1,535.2c-5.8,0-10.5,4.7-10.5,10.5s4.7,10.5,10.5,10.5s10.5-4.7,10.5-10.5S175.9,535.2,170.1,535.2L170.1,535.2z"/>
 </g>
