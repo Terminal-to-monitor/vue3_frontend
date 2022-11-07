@@ -137,6 +137,7 @@ const showIf = (id:number,lines: any,show: string) => {
      lines[8].style.visibility = show
          break;
    case 11 :
+     lines[2].style.visibility = show
      lines[4].style.visibility = show
      lines[9].style.visibility = show
      break;
@@ -169,7 +170,7 @@ const c = async(id: number) =>{
     emsg('前向阀门已关闭')
     return
   }
-  if(id === 13 && (nodeInfo.value[6]['status'] === 0 || nodeInfo.value[7]['status'] === 0 || nodeInfo.value[10]['status'] === 0 || nodeInfo.value[11]['status'] === 0 || nodeInfo.value[12]['status'] === 0 ) ){
+  if(id === 13 && (nodeInfo.value[6]['status'] === 0 || nodeInfo.value[7]['status'] === 0 || nodeInfo.value[10]['status'] === 0 || nodeInfo.value[11]['status'] === 0 ) ){
     emsg('前向阀门已关闭')
     return
   }
@@ -180,6 +181,18 @@ const c = async(id: number) =>{
       const status = nodeInfo.value[id]['status']
       const info = status === 1 ? '阀门已开启':'阀门已关闭'
       const show = status === 1 ? 'visible':'hidden'
+      if((nodeInfo.value[12]['status'] === 0 && nodeInfo.value[13]['status'] === 0) && (id === 12 || id === 13)){
+        lines[7].style.visibility = 'hidden'
+        lines[4].style.visibility = 'hidden'
+        lines[3].style.visibility = 'hidden'
+        return
+      }
+      if((nodeInfo.value[12]['status'] === 1 && nodeInfo.value[13]['status'] === 1) && (id === 12 || id === 13)){
+        lines[7].style.visibility = 'visible'
+        lines[4].style.visibility = 'visible'
+        lines[3].style.visibility = 'visible'
+        return
+      }
       console.log(id,status,show)
       showIf(id,lines,show)
       smsg(info)
