@@ -12,49 +12,37 @@ let nodeInfo = ref([])
 let drawer = ref<boolean>(false)
 let drawer2 = ref<boolean>(false)
 const direction = ref<string>('rtl')
+const lines = document.getElementsByTagName('line')
 
 
-let valve = ref({
-  s1:true,
-  s2:true,
-  s3:true,
-  s4:true,
-  s5:true,
-  s6:true,
-  s7:true,
-  s8:true
- })
 //流向显示
 const valveSwitch = (mode: string ) => {
     switch (mode){
       case '1' :
-        valve.value.s1 = false
-        valve.value.s2 = false
-        valve.value.s3 = false
-        valve.value.s4 = false
-        valve.value.s5 = false
-        valve.value.s6 = false
-        valve.value.s7 = false
-        valve.value.s8 = false
+        lines[1].style.visibility = 'hidden'
+        lines[2].style.visibility = 'hidden'
+        lines[3].style.visibility = 'hidden'
+        lines[4].style.visibility = 'hidden'
+        lines[6].style.visibility = 'hidden'
+        lines[7].style.visibility = 'hidden'
+        lines[8].style.visibility = 'hidden'
+        lines[9].style.visibility = 'hidden'
         break;
       case '2' :
-        valve.value.s3 = false
-        valve.value.s2 = false
-        valve.value.s5 = false
-        valve.value.s8 = false
+        lines[1].style.visibility = 'hidden'
+        lines[3].style.visibility = 'hidden'
+        lines[8].style.visibility = 'hidden'
         break;
       case '3' :
-        valve.value.s4 =  false
-        valve.value.s6 =  false
-        valve.value.s8 = false
+        lines[2].style.visibility = 'hidden'
+        lines[4].style.visibility = 'hidden'
+        lines[9].style.visibility = 'hidden'
         break;
       case '4' :
-        valve.value.s5 = false
-        valve.value.s8 = false
+        lines[3].style.visibility = 'hidden'
        break;
       case '5' :
-        valve.value.s7 = false
-        valve.value.s8 = false
+        lines[4].style.visibility = 'hidden'
         break;
     }
 }
@@ -88,7 +76,6 @@ const vShow = () => {
   }
   if(nodeInfo.value[10]['status'] === 0){
     valveSwitch('2')
-    return
   }
   if(nodeInfo.value[11]['status'] === 0){
     valveSwitch('3')
@@ -114,7 +101,7 @@ const getWrong = () => {
 }
 
 //动态控制流向
-const showIf = (id:number,lines: any,show: string) => {
+const showIf = (id:number,show: string) => {
  switch (id){
    case 6 :
      for (let i = 0; i < lines.length ; i++) {
@@ -152,7 +139,6 @@ const showIf = (id:number,lines: any,show: string) => {
 //阀门开关
 const c = async(id: number) =>{
   const item: any = nodeInfo.value[id]
-  const lines = document.getElementsByTagName('line')
   item.status = item.status ===  1 ? 0 : 1
   if(id === 7 && nodeInfo.value[6]['status'] === 0 ){
       emsg('前向阀门已关闭')
@@ -162,7 +148,7 @@ const c = async(id: number) =>{
     emsg('前向阀门已关闭')
     return
   }
-  if(id === 11 && (nodeInfo.value[6]['status'] === 0 || nodeInfo.value[7]['status'] === 0 || nodeInfo.value[10]['status'] === 0 ) ){
+  if(id === 11 && (nodeInfo.value[6]['status'] === 0 || nodeInfo.value[7]['status'] === 0 ) ){
     emsg('前向阀门已关闭')
     return
   }
@@ -193,8 +179,12 @@ const c = async(id: number) =>{
         lines[3].style.visibility = 'visible'
         return
       }
+      if(nodeInfo.value[10]['status'] === 0 && nodeInfo.value[11]['status'] === 0){
+        valveSwitch('1')
+        return
+      }
       console.log(id,status,show)
-      showIf(id,lines,show)
+      showIf(id,show)
       smsg(info)
     },500)
     }else{
@@ -4537,15 +4527,15 @@ AHYjVvrV6x6+/i/AANygu3e6LH4CAAAAAElFTkSuQmCC" transform="matrix(0.48 0 0 0.48 11
     <rect x="1065.1" y="83.9" class="st4" width="0.1" height="0.1"/>
     <rect x="1065.1" y="83.4" class="st4" width="0.1" height="0.1"/>
     <line l="3" class="st375" x1="410.5" y1="263.6" x2="410.5" y2="545.5"/>
-    <line  v-show="valve.s2" l="9" class="st375" x1="574.5" y1="168" x2="574.5" y2="234.5"/>
-    <line  v-show="valve.s6" l="6" class="st375" x1="574.5" y1="234.6" x2="574.5" y2="261.4"/>
-    <line v-show="valve.s5" l="11" class="st375" x1="1204.2" y1="168" x2="1204.2" y2="234.5"/>
-    <line v-show="valve.s7" l="8" class="st375" x1="1204.2" y1="234.6" x2="1204.2" y2="261.4"/>
+    <line   l="9" class="st375" x1="574.5" y1="168" x2="574.5" y2="234.5"/>
+    <line   l="6" class="st375" x1="574.5" y1="234.6" x2="574.5" y2="261.4"/>
+    <line  l="11" class="st375" x1="1204.2" y1="168" x2="1204.2" y2="234.5"/>
+    <line  l="8" class="st375" x1="1204.2" y1="234.6" x2="1204.2" y2="261.4"/>
     <line l="2" class="st375" x1="393.8" y1="546.1" x2="136.3" y2="546.1"/>
-    <line v-show="valve.s1" l="4" class="st375" x1="558.8" y1="235.2" x2="428.9" y2="235.2"/>
-    <line v-show="valve.s8" l="5" class="st375" x1="1401.4" y1="223.6" x2="1220.7" y2="223.6"/>
-    <line v-show="valve.s3"  l="10" class="st375" x1="1179.3" y1="141" x2="599.9" y2="141"/>
-    <line  v-show="valve.s4"  l="7" class="st375" x1="1179.3" y1="287.8" x2="599.9" y2="287.8"/>
+    <line  l="4" class="st375" x1="558.8" y1="235.2" x2="428.9" y2="235.2"/>
+    <line  l="5" class="st375" x1="1401.4" y1="223.6" x2="1220.7" y2="223.6"/>
+    <line  l="10" class="st375" x1="1179.3" y1="141" x2="599.9" y2="141"/>
+    <line    l="7" class="st375" x1="1179.3" y1="287.8" x2="599.9" y2="287.8"/>
 
     <linearGradient id="SVGID_00000002363049819617927270000004678387158824789888_" gradientUnits="userSpaceOnUse" x1="167.8896" y1="325.9088" x2="172.1796" y2="325.9488" gradientTransform="matrix(1 0 0 -1 0 857.1044)">
 			<stop  offset="0" style="stop-color:#29ABE2"/>
